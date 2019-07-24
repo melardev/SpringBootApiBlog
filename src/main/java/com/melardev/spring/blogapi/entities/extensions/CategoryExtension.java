@@ -18,6 +18,10 @@ public class CategoryExtension extends Category {
         this.id = id;
     }
 
+    public CategoryExtension(Long id, String name, String slug) {
+        this(id, name, slug, (long) -1);
+    }
+
     public Long getArticleId() {
         return articleId;
     }

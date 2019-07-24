@@ -7,11 +7,14 @@ import javax.persistence.*;
 @DiscriminatorColumn(name = "upload_type", discriminatorType = DiscriminatorType.INTEGER)
 public class FileUpload extends TimestampedEntity {
 
-    String fileName;
-    String originalFileName;
+    protected String filePath;
+    protected String fileName;
+    protected String originalFileName;
+
+    // @Column(name = "upload_type", insertable = false, updatable = false) protected int uploadType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    User user;
+    private User user;
 
     public String getFileName() {
         return fileName;
@@ -36,4 +39,13 @@ public class FileUpload extends TimestampedEntity {
     public void setUser(User user) {
         this.user = user;
     }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
 }

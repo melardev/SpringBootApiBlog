@@ -10,7 +10,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     database-platform: MYSQL
     show-sql: true
 
@@ -22,6 +22,8 @@ spring:
         type: trace
   thymeleaf:
     cache: false # turn off thymeleaf caching
+  resources:
+    static-locations: file:./uploads/
 
 logging:
   level:

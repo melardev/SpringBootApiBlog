@@ -19,13 +19,16 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
     //Page<Article> findByCreatedAtDesc(Pageable pageable);
 
-    @Query("SELECT a FROM Article a INNER JOIN a.categories t WHERE t.name=:category")
+    @Query("SELECT a FROM Article a INNER JOIN a.categories c WHERE c.name=:category")
     Page<Article> findByCategory(@Param("category") String category, Pageable pageable);
+
+    @Query("SELECT new com.melardev.spring.blogapi.entities.extensions.ArticleExtension(a.id, a.title,a.slug, a.description,a.user.id,a.user.username, a.publishOn, a.comments.size) FROM Article a inner join a.categories c WHERE c.slug = :slug")
+    Page<Article> findByCategorySlug(String slug, Pageable pageable);
 
     @Query("SELECT a FROM Article a INNER JOIN a.tags t WHERE t.name = :tag")
     Page<Article> findByTagFull(@Param("tag") String tag, Pageable pageable);
 
-    @Query("SELECT new com.melardev.spring.blogapi.entities.extensions.ArticleExtension(a.id, a.title,a.slug, a.description,a.user.id,a.user.username, a.publishOn) FROM Article a inner join a.tags t WHERE t.slug = :slug")
+    @Query("SELECT new com.melardev.spring.blogapi.entities.extensions.ArticleExtension(a.id, a.title,a.slug, a.description,a.user.id,a.user.username, a.publishOn, a.comments.size) FROM Article a inner join a.tags t WHERE t.slug = :slug")
     Page<Article> findByTagSlug(@Param("slug") String slug, Pageable pageable);
 
     Article findByUser(User user);
@@ -92,7 +95,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
     @Query("SELECT t.name, count(a) as tag_count from Article a " +
             "INNER JOIN a.tags t " +
-            "WHERE a.id in :status " +
+            "WHERE a.id in :ids " +
             "GROUP BY t.id " +
             "ORDER BY tag_count DESC")
     List<Object[]> countArticlesByTags(@Param("ids") List<Long> articleIds);

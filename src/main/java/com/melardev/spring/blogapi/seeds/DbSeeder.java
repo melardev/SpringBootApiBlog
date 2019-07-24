@@ -214,7 +214,7 @@ public class DbSeeder implements CommandLineRunner {
                     Article article = new Article();
                     article.setTitle(StringHelper.join(faker.lorem().words(faker.random().nextInt(3, 5)), " "));
                     article.setDescription((StringHelper.join(faker.lorem().sentences(faker.random().nextInt(1, 2)), ". ")));
-                    article.setBody(StringHelper.join(faker.lorem().paragraphs(faker.random().nextInt(1, 3)), "."));
+                    article.setBody(StringHelper.join(faker.lorem().paragraphs(faker.random().nextInt(10, 20)), "."));
                     article.setUser(authors.get(random.nextInt(authors.size())));
                     article.setViews(faker.random().nextInt(0, 10000));
                     article.setTags(new HashSet<Tag>(Arrays

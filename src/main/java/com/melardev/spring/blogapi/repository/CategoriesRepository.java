@@ -8,7 +8,9 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface CategoriesRepository extends CrudRepository<Category, Long> {
@@ -28,4 +30,10 @@ public interface CategoriesRepository extends CrudRepository<Category, Long> {
 
     @Query("select new com.melardev.spring.blogapi.entities.extensions.CategoryExtension(c.id, c.name,c.slug, a.id) from Category c inner join c.articles as a where a.id in :ids")
     List<Category> fetchCategorySummaryFromArticles(@Param("ids") List<Long> articleIds);
+
+    @Query("select new com.melardev.spring.blogapi.entities.extensions.CategoryExtension(c.id, c.name, c.slug) from Category c")
+    Collection<Category> fetchNameAndSlug();
+
+    @Query("select c from Category c inner join c.articles a where a.id = :id")
+    Set<Category> fetchCategoriesFromArticleId(Long id);
 }

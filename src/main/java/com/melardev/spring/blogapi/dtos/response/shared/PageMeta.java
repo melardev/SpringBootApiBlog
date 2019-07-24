@@ -5,18 +5,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public class PageMeta {
-    boolean hasNext;
-    boolean hasPrevPage;
-    public int currentPage;
-    long totalItemsCount; // total cartItems in total
-    int pageSize; // max cartItems per page
-    int currentItemsCount; // cartItems in this page
-    int pageCount; // number of pages
-    long offset;
-    int nextPageNumber;
-    int prevPageNumber;
-    String nextPageUrl;
-    String prevPageUrl;
+    private boolean hasNextPage;
+    private boolean hasPrevPage;
+    private int currentPageNumber;
+    private long totalItemsCount; // total cartItems in total
+    private int requestedPageSize; // max cartItems per page
+    private int currentItemsCount; // cartItems in this page
+    private int numberOfPages; // number of pages
+    private long offset;
+    private int nextPageNumber;
+    private int prevPageNumber;
+    private String nextPageUrl;
+    private String prevPageUrl;
 
     public PageMeta() {
     }
@@ -28,11 +28,11 @@ public class PageMeta {
 
         pageMeta.setTotalItemsCount(resourcePage.getTotalElements());
         pageMeta.setOffset(pageable.getOffset());
-        pageMeta.setPageSize(pageable.getPageSize());
+        pageMeta.setRequestedPageSize(pageable.getPageSize());
         pageMeta.setCurrentItemsCount(resourcePage.getContent().size());
-        pageMeta.setPageCount(resourcePage.getTotalPages());
+        pageMeta.setNumberOfPages(resourcePage.getTotalPages());
 
-        pageMeta.setCurrentPage(resourcePage.getNumber() + 1);
+        pageMeta.setCurrentPageNumber(resourcePage.getNumber() + 1);
 
         pageMeta.setHasNextPage(resourcePage.hasNext());
         pageMeta.setHasPrevPage(resourcePage.hasPrevious());
@@ -40,22 +40,22 @@ public class PageMeta {
         if (resourcePage.hasNext()) {
             pageMeta.setNextPageNumber(resourcePage.getPageable().next().getPageNumber() + 1);
             pageMeta.setNextPageUrl(String.format("%s?page_size=%d&page=%d",
-                    basePath, pageMeta.getPageSize(), pageMeta.getNextPageNumber()));
+                    basePath, pageMeta.getRequestedPageSize(), pageMeta.getNextPageNumber()));
         } else {
-            pageMeta.setNextPageNumber(pageMeta.getPageCount());
+            pageMeta.setNextPageNumber(pageMeta.getNumberOfPages());
             pageMeta.setNextPageUrl(String.format("%s?page_size=%d&page=%d",
-                    basePath, pageMeta.getPageSize(), pageMeta.getNextPageNumber()));
+                    basePath, pageMeta.getRequestedPageSize(), pageMeta.getNextPageNumber()));
         }
         if (resourcePage.hasPrevious()) {
             pageMeta.setPrevPageNumber(resourcePage.getPageable().previousOrFirst().getPageNumber() + 1);
 
             pageMeta.setPrevPageUrl(String.format("%s?page_size=%d&page=%d",
-                    basePath, pageMeta.getPageSize(),
+                    basePath, pageMeta.getRequestedPageSize(),
                     pageMeta.getPrevPageNumber()));
         } else {
             pageMeta.setPrevPageNumber(1);
             pageMeta.setPrevPageUrl(String.format("%s?page_size=%d&page=%d",
-                    basePath, pageMeta.getPageSize(), pageMeta.getPrevPageNumber()));
+                    basePath, pageMeta.getRequestedPageSize(), pageMeta.getPrevPageNumber()));
         }
 
         return pageMeta;
@@ -74,7 +74,7 @@ public class PageMeta {
     }
 
     private void setHasNextPage(boolean hasNext) {
-        this.hasNext = hasNext;
+        this.hasNextPage = hasNext;
     }
 
     public void setOffset(long offset) {
@@ -85,12 +85,12 @@ public class PageMeta {
         return offset;
     }
 
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
+    public void setRequestedPageSize(int requestedPageSize) {
+        this.requestedPageSize = requestedPageSize;
     }
 
-    public int getPageSize() {
-        return pageSize;
+    public int getRequestedPageSize() {
+        return requestedPageSize;
     }
 
     public void setCurrentItemsCount(int currentItemsCount) {
@@ -101,12 +101,12 @@ public class PageMeta {
         return currentItemsCount;
     }
 
-    public void setPageCount(int pageCount) {
-        this.pageCount = pageCount;
+    public void setNumberOfPages(int numberOfPages) {
+        this.numberOfPages = numberOfPages;
     }
 
-    public int getPageCount() {
-        return pageCount;
+    public int getNumberOfPages() {
+        return numberOfPages;
     }
 
     public void setNextPageNumber(int nextPageNumber) {
@@ -141,11 +141,23 @@ public class PageMeta {
         return totalItemsCount;
     }
 
-    public void setCurrentPage(int currentPage) {
-        this.currentPage = currentPage;
+    public void setCurrentPageNumber(int currentPageNumber) {
+        this.currentPageNumber = currentPageNumber;
     }
 
-    public int getCurrentPage() {
-        return currentPage;
+    public int getCurrentPageNumber() {
+        return currentPageNumber;
+    }
+
+    public boolean isHasNextPage() {
+        return hasNextPage;
+    }
+
+    public boolean isHasPrevPage() {
+        return hasPrevPage;
+    }
+
+    public String getPrevPageUrl() {
+        return prevPageUrl;
     }
 }

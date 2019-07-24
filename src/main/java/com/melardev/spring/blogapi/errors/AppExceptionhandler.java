@@ -46,10 +46,11 @@ public class AppExceptionhandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), HttpStatus.FORBIDDEN);
     }
 
+    /*
     @ExceptionHandler(Exception.class)
     public String exception(Exception ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("messages", ex.getLocalizedMessage());
         return "errors/5xx";
     }
-
+*/
 }

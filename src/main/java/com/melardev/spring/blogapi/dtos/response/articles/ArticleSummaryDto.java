@@ -6,13 +6,18 @@ import com.melardev.spring.blogapi.dtos.response.categories.SingleCategoryDto;
 import com.melardev.spring.blogapi.dtos.response.tags.SingleTagDto;
 import com.melardev.spring.blogapi.dtos.response.users.partials.UserIdAndUsernameDto;
 import com.melardev.spring.blogapi.entities.Article;
+import com.melardev.spring.blogapi.entities.FileUpload;
 
 import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public class ArticleSummaryDto {
 
+    private Collection<String> images;
     private Long commentsCount;
     public long id;
     public String title;
@@ -32,7 +37,8 @@ public class ArticleSummaryDto {
 
     }
 
-    public ArticleSummaryDto(Long id, String title, String slug, String description, List<SingleTagDto> tags, List<SingleCategoryDto> categories, Long commentCount,
+    public ArticleSummaryDto(Long id, String title, String slug, String description, List<SingleTagDto> tags, List<SingleCategoryDto> categories,
+                             Collection<String> imagePaths, Long commentCount,
                              ZonedDateTime publishOn, UserIdAndUsernameDto userDto) {
         this.id = id;
         this.title = title;
@@ -43,6 +49,7 @@ public class ArticleSummaryDto {
         this.commentsCount = commentCount;
         this.createdAt = publishOn;
         this.userDto = userDto;
+        this.images = imagePaths;
 
     }
 
@@ -52,8 +59,9 @@ public class ArticleSummaryDto {
                 article.getTitle(),
                 article.getSlug(),
                 article.getDescription(),
-                article.getTags() != null ? article.getTags().stream().map(SingleTagDto::build).collect(Collectors.toList()) : null,
-                article.getCategories() != null ? article.getCategories().stream().map(SingleCategoryDto::build).collect(Collectors.toList()) : null,
+                article.getTags() != null ? article.getTags().stream().map(SingleTagDto::build).collect(toList()) : null,
+                article.getCategories() != null ? article.getCategories().stream().map(SingleCategoryDto::build).collect(toList()) : null,
+                article.getImages() != null ? article.getImages().stream().map(FileUpload::getFilePath).collect(toList()) : Collections.emptyList(),
                 article.getCommentCount(),
                 article.getPublishOn(),
                 UserIdAndUsernameDto.build(article.getUser()));
@@ -135,5 +143,9 @@ public class ArticleSummaryDto {
 
     public UserIdAndUsernameDto getUserDto() {
         return userDto;
+    }
+
+    public Collection<String> getImages() {
+        return images;
     }
 }

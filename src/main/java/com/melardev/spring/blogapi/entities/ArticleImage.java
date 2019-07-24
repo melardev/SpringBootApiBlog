@@ -10,6 +10,14 @@ public class ArticleImage extends FileUpload {
     @JoinColumn(name = "article_id")
     private Article article;
 
+    public ArticleImage() {
+    }
+
+    public ArticleImage(Long id, String path) {
+        this.id = id;
+        this.filePath = path;
+    }
+
     public Article getArticle() {
         return article;
     }

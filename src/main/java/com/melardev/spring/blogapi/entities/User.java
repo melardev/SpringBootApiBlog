@@ -148,7 +148,7 @@ public class User extends TimestampedEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return false;
+        return true;
     }
 
     @Override

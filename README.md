@@ -2,6 +2,9 @@
 This is a Spring Boot Blog Api application, it is not finished, but I have written some code already.
 # TODO
 - Rethink findByUsernameOrEmail issue, user impersonation possible?
+- There is a publishOn Date time field in Article to allow scheduling posting, but the feature is not implemted,
+and articles at this moment are retrieved regardless of their publish time, I have to change that.
+- By Tag does not return comments count nor tags nor categories
 - Order HomeResponse, first Articles, then tags then categories
 - Annotation for authenticated users for actions in LikeController and SubscriptionsController
 - Enforce Article slug uniqueness

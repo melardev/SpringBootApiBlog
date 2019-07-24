@@ -1,6 +1,7 @@
 package com.melardev.spring.blogapi.controllers;
 
 import com.melardev.spring.blogapi.dtos.request.users.CreateUserDto;
+import com.melardev.spring.blogapi.dtos.request.users.LoginDto;
 import com.melardev.spring.blogapi.dtos.response.base.AppResponse;
 import com.melardev.spring.blogapi.dtos.response.base.ErrorResponse;
 import com.melardev.spring.blogapi.dtos.response.base.SuccessResponse;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.WebApplicationContext;
 
 import javax.validation.Valid;
 import java.util.Collections;
@@ -34,6 +36,8 @@ public class UsersController {
 
     @Autowired
     PasswordEncoder encoder;
+    @Autowired
+    WebApplicationContext context;
 
     @PostMapping
     public ResponseEntity<AppResponse> registerUser(@Valid @RequestBody CreateUserDto createUserDto, BindingResult result) {
@@ -61,6 +65,12 @@ public class UsersController {
 
         return new ResponseEntity<AppResponse>(new SuccessResponse("User registered successfully"), HttpStatus.OK);
 
+    }
+
+    @PostMapping("login")
+    public ResponseEntity<AppResponse> login(@Valid @RequestBody LoginDto loginRequest) {
+        AuthController controller = context.getBean(AuthController.class);
+        return controller.login(loginRequest);
     }
 
 }

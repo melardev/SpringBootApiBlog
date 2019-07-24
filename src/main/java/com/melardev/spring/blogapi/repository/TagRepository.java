@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 
 @Repository
@@ -24,4 +26,10 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     @Query("select new com.melardev.spring.blogapi.entities.extensions.TagExtension(t.id, t.name,t.slug, a.id) from Tag t inner join t.articles as a where a.id in :ids")
     List<Tag> fetchTagSummaryFromArticles(List<Long> ids);
+
+    @Query("select new com.melardev.spring.blogapi.entities.extensions.TagExtension(t.id, t.name, t.slug) from Tag t")
+    Collection<Tag> fetchNameAndSlug();
+
+    @Query("select t from Tag t inner join t.articles a where a.id = :id")
+    Set<Tag> fetchTagsFromArticleId(Long id);
 }

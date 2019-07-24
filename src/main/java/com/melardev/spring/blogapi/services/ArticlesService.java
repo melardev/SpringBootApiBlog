@@ -1,14 +1,13 @@
 package com.melardev.spring.blogapi.services;
 
-import com.melardev.spring.blogapi.entities.Article;
-import com.melardev.spring.blogapi.entities.Category;
-import com.melardev.spring.blogapi.entities.Tag;
-import com.melardev.spring.blogapi.entities.User;
+import com.melardev.spring.blogapi.entities.*;
 import com.melardev.spring.blogapi.entities.extensions.CategoryExtension;
 import com.melardev.spring.blogapi.entities.extensions.TagExtension;
+import com.melardev.spring.blogapi.entities.extensions.UploadExtension;
 import com.melardev.spring.blogapi.enums.ContentType;
 import com.melardev.spring.blogapi.errors.exceptions.ResourceNotFoundException;
 import com.melardev.spring.blogapi.repository.ArticleRepository;
+import com.melardev.spring.blogapi.repository.UploadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +39,9 @@ public class ArticlesService {
     @Autowired
     private CommentsService commentsService;
 
+    @Autowired
+    private UploadRepository uploadRepository;
+
     public Set<Tag> getArticleTags(Long id) {
         // new PageRequest(page, pageSize, Sort.Direction.DESC, "createdAt")
         //return articlesRepository.findByTagSlug(tagName, pageMeta);
@@ -61,10 +63,10 @@ public class ArticlesService {
         return tags;
     }
 
-
     public Page<Article> getByTagSlug(String slug, int page, int count) {
         PageRequest pageRequest = PageRequest.of(page - 1, count, Sort.Direction.DESC, "createdAt");
-        return articlesRepository.findByTagSlug(slug, pageRequest);
+        Page<Article> articles = articlesRepository.findByTagSlug(slug, pageRequest);
+        return populateTagsAndCategories(articles);
     }
 
     public Page<Article> findAllForSummary(int page, int pageSize) {
@@ -72,23 +74,23 @@ public class ArticlesService {
         Page<Article> result = this.articlesRepository.findAllForSummary(pageRequest);
         // Why not just calling this.articlesRepository.fetchPageByUser(pageRequest) ? because the below code is faster
         // but you could call fetchPageByUser() and then you will also need to make a request to comments table to fetch comments count
-        List<Article> products = result.getContent();
-        List<Long> productIds = products.stream().map(p -> p.getId()).collect(Collectors.toList());
+        List<Article> articles = result.getContent();
+        List<Long> articleIds = articles.stream().map(p -> p.getId()).collect(Collectors.toList());
 
-        List<Tag> tags = tagService.findTagNamesForArticleIds(productIds);
-        List<Category> categories = categoriesService.getNamesForProductIds(productIds);
-        List<Object[]> commentCounts = commentsService.fetchCommentCountForArticleIds(productIds);
-
+        List<Tag> tags = tagService.findTagNamesForArticleIds(articleIds);
+        List<Category> categories = categoriesService.getNamesForProductIds(articleIds);
+        List<Object[]> commentCounts = commentsService.fetchCommentCountForArticleIds(articleIds);
+        List<UploadExtension> images = uploadRepository.getImagesFromArticles(articleIds);
 
         // this is done to iterate once, instead of iterating all(MANY) the products for each(MANY), then for each category and then comment
         // I iterate in (ONE) pass over categories, tags, and commentsCount, then the products are iterated in nested loop (MANY)
         // that approach is implemented in OrderService::findOrderSummariesBelongingToUser orderItems.forEach blabla
-        int lastIndex = Math.max(commentCounts.size(), Math.max(tags.size(), categories.size()));
+        int lastIndex = Math.max(Math.max(commentCounts.size(), Math.max(tags.size(), categories.size())), images.size());
 
         TagExtension tag = null;
         CategoryExtension category = null;
         int index = -1;
-
+        UploadExtension image = null;
         Article article;
         for (int i = 0; i < lastIndex; i++) {
             if (i < tags.size())
@@ -101,15 +103,20 @@ public class ArticlesService {
             else
                 index = -1;
 
+            if (i < images.size())
+                image = images.get(i);
 
-            for (int j = 0; j < products.size(); j++) {
-                article = products.get(j);
+            for (int j = 0; j < articles.size(); j++) {
+                article = articles.get(j);
 
                 if (tag != null && article.getId().equals(tag.getArticleId()))
                     article.getTags().add(tag);
 
                 if (category != null && article.getId().equals(category.getArticleId()))
                     article.getCategories().add(category);
+
+                if (image != null && article.getId().equals(image.getArticleId()))
+                    article.getImages().add(new ArticleImage(image.getId(), image.getFilePath()));
 
                 if (index != -1 && article.getId().equals(commentCounts.get(index)[0]))
                     article.setCommentsCount((Long) commentCounts.get(index)[1]);
@@ -139,8 +146,17 @@ public class ArticlesService {
 
     public Article getArticleBySlug(String slug, boolean throwIfNull) {
         Article article = articlesRepository.findBySlug(slug);
-        if (article == null && throwIfNull)
-            throw new ResourceNotFoundException("Article not found");
+        if (article == null) {
+            if (throwIfNull)
+                throw new ResourceNotFoundException("Article not found");
+            return null;
+        }
+
+        Set<Tag> tags = tagService.findTagNamesForArticleId(article.getId());
+        Set<Category> categories = categoriesService.getNamesForProductId(article.getId());
+
+        article.setTags(tags);
+        article.setCategories(categories);
         return article;
     }
 
@@ -292,11 +308,27 @@ public class ArticlesService {
         // return articlesRepository.getArticlesNotLikedBy(user.getId());
     }
 
-    public Article createArticle(User user, String title, String slug, String description, String body, ContentType contentType, Set<Tag> tags, Set<Category> categories) {
-        return update(user, new Article(), title, slug, description, body, contentType, tags, categories);
+    public Article createArticle(User user, String title, String slug, String description, String body, ContentType
+            contentType, Set<Tag> tags, Set<Category> categories, List<ArticleImage> imageList) {
+        Article article = prepareArticle(user, title, slug, description, body, contentType, tags, categories, imageList);
+        articlesRepository.save(article);
+        for (ArticleImage img : imageList) {
+            img.setArticle(article);
+        }
+        uploadRepository.saveAll(imageList);
+        return article;
     }
 
-    public Article update(User user, Article article, String title, String slug, String description, String body, ContentType contentType, Set<Tag> tags, Set<Category> categories) {
+    private Article prepareArticle(User user, String title, String slug, String description, String
+            body, ContentType contentType, Set<Tag> tags, Set<Category> categories, List<ArticleImage> imageList) {
+        Article article = new Article();
+        return prepareArticle(user, article, title, slug, description, body, contentType, tags, categories, imageList);
+    }
+
+    private Article prepareArticle(User user, Article article, String title, String slug, String
+            description, String body, ContentType
+                                           contentType, Set<Tag> tags, Set<Category> categories, List<ArticleImage> imageList) {
+
         article.setTitle(title);
         article.setSlug(slug);
         article.setDescription(description);
@@ -307,6 +339,20 @@ public class ArticlesService {
         article.setTags(tags);
         article.setCategories(categories);
         article.setUser(user);
+        // article.setImages(imageList);
+        return article;
+    }
+
+    public Article update(User user,
+                          Article article,
+                          String title,
+                          String slug,
+                          String description,
+                          String body, ContentType contentType,
+                          Set<Tag> tags,
+                          Set<Category> categories
+    ) {
+        prepareArticle(user, article, title, slug, description, body, contentType, tags, categories, null);
         return articlesRepository.save(article);
     }
 
@@ -329,5 +375,30 @@ public class ArticlesService {
 
     public Article fetchProxyFromSlug(String slug) {
         return articlesRepository.fetchProxyFromSlug(slug);
+    }
+
+    public Page<Article> getByCategorySlug(String categorySlug, int page, int pageSize) {
+        PageRequest pageRequest = PageRequest.of(page - 1, pageSize, Sort.Direction.DESC, "createdAt");
+        Page<Article> articles = articlesRepository.findByCategorySlug(categorySlug, pageRequest);
+        return populateTagsAndCategories(articles);
+    }
+
+    private Page<Article> populateTagsAndCategories(Page<Article> articles) {
+        List<Long> articleIds = articles.getContent().stream().map(TimestampedEntity::getId).collect(Collectors.toList());
+        List<Tag> tags = tagService.findTagNamesForArticleIds(articleIds);
+        List<Category> categories = categoriesService.getNamesForProductIds(articleIds);
+
+        articles.stream().forEach(article -> {
+            tags.forEach(tag -> {
+                if (((TagExtension) tag).getArticleId().equals(article.getId()))
+                    article.getTags().add(tag);
+            });
+
+            categories.forEach(category -> {
+                if (((CategoryExtension) category).getArticleId().equals(article.getId()))
+                    article.getCategories().add(category);
+            });
+        });
+        return articles;
     }
 }

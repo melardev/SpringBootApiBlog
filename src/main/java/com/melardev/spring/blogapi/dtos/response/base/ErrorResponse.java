@@ -29,7 +29,7 @@ public class ErrorResponse extends AppResponse {
         this.errors = errors;
     }
 
-    ErrorResponse() {
+    public ErrorResponse() {
         this(new HashMap<>());
     }
 

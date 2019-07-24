@@ -7,10 +7,7 @@ import com.melardev.spring.blogapi.dtos.response.articles.SingleArticleResponse;
 import com.melardev.spring.blogapi.dtos.response.base.AppResponse;
 import com.melardev.spring.blogapi.dtos.response.base.ErrorResponse;
 import com.melardev.spring.blogapi.dtos.response.pages.HomeResponse;
-import com.melardev.spring.blogapi.entities.Article;
-import com.melardev.spring.blogapi.entities.Category;
-import com.melardev.spring.blogapi.entities.Tag;
-import com.melardev.spring.blogapi.entities.User;
+import com.melardev.spring.blogapi.entities.*;
 import com.melardev.spring.blogapi.enums.CrudOperation;
 import com.melardev.spring.blogapi.errors.exceptions.PermissionDeniedException;
 import com.melardev.spring.blogapi.services.*;
@@ -24,8 +21,15 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @CrossOrigin
 @RestController
@@ -45,6 +49,8 @@ public class ArticlesController {
 
     @Autowired
     private TagService tagService;
+    @Autowired
+    private SettingsService settingsService;
 
 
     @Autowired
@@ -81,11 +87,20 @@ public class ArticlesController {
 
 
     @GetMapping("by_tag/{tag_slug}")
-    public ArticleListResponse getArticlesByTag(@PathVariable(name = "tag_slug", required = false) String tagName,
+    public ArticleListResponse getArticlesByTag(@PathVariable(name = "tag_slug", required = false) String tagSlug,
                                                 HttpServletRequest request,
                                                 @RequestParam(value = "page", defaultValue = "1") int page,
-                                                @RequestParam(value = "page_size", defaultValue = "30") int pageSize) {
-        Page<Article> articlesPage = articlesService.getByTagSlug(tagName, page, pageSize);
+                                                @RequestParam(value = "page_size", defaultValue = "8") int pageSize) {
+        Page<Article> articlesPage = articlesService.getByTagSlug(tagSlug, page, pageSize);
+        return ArticleListResponse.build(articlesPage, request.getRequestURI());
+    }
+
+    @GetMapping("by_category/{category_slug}")
+    public ArticleListResponse getArticlesByCategory(@PathVariable(name = "category_slug", required = false) String categorySlug,
+                                                     HttpServletRequest request,
+                                                     @RequestParam(value = "page", defaultValue = "1") int page,
+                                                     @RequestParam(value = "page_size", defaultValue = "8") int pageSize) {
+        Page<Article> articlesPage = articlesService.getByCategorySlug(categorySlug, page, pageSize);
         return ArticleListResponse.build(articlesPage, request.getRequestURI());
     }
 
@@ -103,13 +118,15 @@ public class ArticlesController {
     }
 
     @PostMapping
-    public ResponseEntity<AppResponse> create(Principal principal, @Valid @RequestBody ArticleDto articleDto, Errors errors, BindingResult bindingResult) {
+    public ResponseEntity<AppResponse> create(Principal principal, @RequestBody ArticleDto articleDto, Errors errors, BindingResult bindingResult) {
         if (!this.authorizationCheck(CrudOperation.CREATE))
             throw new PermissionDeniedException("You are not allowed to create articles");
 
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(new ErrorResponse(bindingResult.getModel()), HttpStatus.BAD_REQUEST);
         } else {
+            List<ArticleImage> imageList = processImages(articleDto.getBody());
+            articleDto.setBody(articleDto.getBody().replace("/api/temp/", "/api/"));
             Article article = articlesService.createArticle(
                     usersService.getCurrentLoggedInUser(),
                     articleDto.getTitle(),
@@ -118,10 +135,49 @@ public class ArticlesController {
                     articleDto.getBody(),
                     articleDto.getContentType(),
                     articleDto.getTags(),
-                    articleDto.getCategories()
+                    articleDto.getCategories(),
+                    imageList
             );
             return new ResponseEntity<>(SingleArticleResponse.build(article), HttpStatus.CREATED);
         }
+    }
+
+    private List<ArticleImage> processImages(String body) {
+        List<ArticleImage> imageList = new ArrayList<>();
+        final String regex = "(?<=<img src=\")[^\"]*";
+        final Pattern p = Pattern.compile(regex);
+        final Matcher m = p.matcher(body);
+        while (m.find()) {
+            String url = m.group();
+            int apiTempIndex = m.group().indexOf("/api/temp");
+            if (apiTempIndex != -1) {
+                String path = url.substring(apiTempIndex + "/api".length());
+                if (path.startsWith("/temp")) {
+                    // Is it 100% safe to LFI?
+                    String normalizedPath = settingsService.getUploadsDirectory() + Paths.get(path).normalize();
+                    String normalizedTarget = normalizedPath.replace(File.separator + "temp", "");
+                    try {
+                        File targetFile = new File(normalizedTarget.substring(0, normalizedTarget.lastIndexOf(File.separator)));
+                        if (!targetFile.exists())
+                            targetFile.mkdirs();
+
+                        File f = new File(normalizedTarget);
+                        Files.move(Paths.get(normalizedPath), Paths.get(normalizedTarget) /*, StandardCopyOption.REPLACE_EXISTING */);
+                        ArticleImage articleImage = new ArticleImage();
+                        articleImage.setFileName(f.getName());
+                        articleImage.setOriginalFileName(f.getName());
+                        articleImage.setFilePath("/api" + normalizedTarget.substring(normalizedTarget.indexOf("uploads" + File.separator) + "uploads".length()).replace("\\", "/"));
+                        // articleImage.setUser(usersService.getCurrentLoggedInUser());
+                        imageList.add(articleImage);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        return imageList;
     }
 
     @PutMapping("{slug}")

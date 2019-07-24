@@ -1,6 +1,7 @@
 package com.melardev.spring.blogapi.dtos.response.articles;
 
 
+import com.melardev.spring.blogapi.dtos.response.base.SuccessResponse;
 import com.melardev.spring.blogapi.dtos.response.shared.PageMeta;
 import com.melardev.spring.blogapi.entities.Article;
 import org.springframework.data.domain.Page;
@@ -9,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class ArticleListResponse {
+public class ArticleListResponse extends SuccessResponse {
 
 
     private PageMeta pageMeta;
@@ -32,10 +33,6 @@ public class ArticleListResponse {
 
     public PageMeta getPageMeta() {
         return pageMeta;
-    }
-
-    public void setPageMeta(PageMeta pageMeta) {
-        this.pageMeta = pageMeta;
     }
 
     public Collection<ArticleSummaryDto> getArticles() {

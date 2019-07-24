@@ -11,10 +11,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 
 @Entity
@@ -54,6 +51,10 @@ public class Article extends TimestampedEntity implements IUserOwnedResource {
     )
     protected Set<Tag> tags = new HashSet<>();
 
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "article")
+    // @Where(clause = "upload_type=0")
+    protected List<ArticleImage> images = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
     @JoinTable(name = "articles_categories",
@@ -237,7 +238,16 @@ public class Article extends TimestampedEntity implements IUserOwnedResource {
     public ZonedDateTime getPublishOn() {
         return publishOn;
     }
-/*
+
+    public List<ArticleImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<ArticleImage> images) {
+        this.images = images;
+    }
+
+    /*
     public Set<Like> getLikes() {
         return likes;
     }

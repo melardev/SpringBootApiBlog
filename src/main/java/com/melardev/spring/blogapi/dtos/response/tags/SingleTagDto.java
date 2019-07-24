@@ -12,7 +12,7 @@ public class SingleTagDto {
     public SingleTagDto(Long id, String name, String slug) {
         this.id = id;
         this.name = name;
-this.slug=slug;
+        this.slug = slug;
     }
 
     public static SingleTagDto build(Tag tag) {

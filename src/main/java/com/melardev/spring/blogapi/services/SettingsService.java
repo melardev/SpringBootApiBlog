@@ -127,4 +127,8 @@ public class SettingsService {
     public ArticleAuthorizationPolicy getWhoCanUpdateArticles() {
         return ArticleAuthorizationPolicy.ADMIN_AND_AUTHORS;
     }
+
+    public String getUploadsDirectory() {
+        return System.getProperty("user.dir") + "/uploads";
+    }
 }

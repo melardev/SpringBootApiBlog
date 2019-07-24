@@ -5,6 +5,7 @@ import com.melardev.spring.blogapi.repository.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +51,7 @@ public class TagService {
     public List<Tag> findAll() {
         return tagRepository.findAll();
     }
+
     public long getAllCount() {
         return tagRepository.count();
     }
@@ -60,11 +62,20 @@ public class TagService {
     }
 
     public Set<Tag> getOrCreate(Set<Tag> tags) {
+        if (tags == null) return null;
         tags = tags.stream().map(t -> t = findOrCreate(t)).collect(Collectors.toSet());
         return tags;
     }
 
     public List<Tag> findTagNamesForArticleIds(List<Long> articleIds) {
         return tagRepository.fetchTagSummaryFromArticles(articleIds);
+    }
+
+    public Collection<Tag> fetchNameAndSlug() {
+        return tagRepository.fetchNameAndSlug();
+    }
+
+    public Set<Tag> findTagNamesForArticleId(Long id) {
+        return tagRepository.fetchTagsFromArticleId(id);
     }
 }

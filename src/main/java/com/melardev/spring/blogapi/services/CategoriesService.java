@@ -5,6 +5,7 @@ import com.melardev.spring.blogapi.repository.CategoriesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ public class CategoriesService {
     }
 
     public Set<Category> getOrCreate(Set<Category> categories) {
+        if (categories == null) return null;
         categories = categories.stream().map(category -> category = findOrCreate(category)).collect(Collectors.toSet());
         return categories;
     }
@@ -46,5 +48,13 @@ public class CategoriesService {
 
     public List<Category> getNamesForProductIds(List<Long> productIds) {
         return categoriesRepository.fetchCategorySummaryFromArticles(productIds);
+    }
+
+    public Collection<Category> fetchNameAndSlug() {
+        return categoriesRepository.fetchNameAndSlug();
+    }
+
+    public Set<Category> getNamesForProductId(Long id) {
+        return categoriesRepository.fetchCategoriesFromArticleId(id);
     }
 }

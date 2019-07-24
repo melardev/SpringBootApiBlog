@@ -17,8 +17,14 @@ public class ArticleExtension extends Article {
     }
 
 
+    public ArticleExtension(Long id, String title, String slug, String description, Long userId, String username, ZonedDateTime publishOn, int commentsCount) {
+        this(id, title, slug, description, userId, username, publishOn);
+        this.setCommentsCount(commentsCount);
+    }
+
     public ArticleExtension(Long id, String title, String slug, String description, Long userId, String username, ZonedDateTime publishOn) {
         this.id = id;
+        // this.images = new ArrayList<>(images);
         this.title = title;
         this.slug = slug;
         this.description = description;
